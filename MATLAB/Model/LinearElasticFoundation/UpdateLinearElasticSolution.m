@@ -1,4 +1,4 @@
-function [SolNew, gammaNew] = UpdateMechanochemicalSolution(solMesh, solOld, W, parameters, options)
+function [SolNew, gammaNew] = UpdateLinearElasticSolution(solMesh, solOld, W, parameters, options)
 
 % Get the relevant parameters to update growth in time
 FOld = solOld.y(4,:);
@@ -17,7 +17,7 @@ gammaOld = parameters.gamma;
 gammaNew = gammaOld.*(1 + dt*(eta.*W(solOld.x, sigma) + mu.*(n3Old - n3s)));
 
 % Define the ODEs
-Odes = @(x, M) NonUniformGrowthOdes(x, M, solOld, parameters);
+Odes = @(x, M) LinearElasticFoundationOdes(x, M, solOld, parameters);
 
 % Define the BCs
 Bcs = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters); 

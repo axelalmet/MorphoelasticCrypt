@@ -1,4 +1,4 @@
-function EvolveMechanochemicalRodShape
+function EvolveShapeWithLinearElasticFoundation
 % close all
 
 % Set the parameters
@@ -14,7 +14,7 @@ Eb = 1; % Bending stiffness
 dt = 1e-2;
 
 % Get the initial solution from AUTO
-solData = load('~/Documents/Morphorods/Code/AUTO/Output/ConstantGrowthAndStiffnesses/Solutions/planarmorphorodsk0p02L29_sol_1');
+solData = load('../../Data/planarmorphorodsk0p02L29_sol_1');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
@@ -53,7 +53,7 @@ parameters.gamma = firstGamma;
 % parameters.K = K.*firstGamma;
 
 % Define the ODEs and BCs
-DerivFun = @(x, M) NonUniformGrowthOdes(x, M, solFromData, parameters);
+DerivFun = @(x, M) LinearElasticFoundationOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
 BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
@@ -106,7 +106,7 @@ gammaSols{2} = [L.*initSol.x; gammaOld];
 for i = 3:numSols
         
     % Update the solution
-    [solNew, gammaNew] = UpdateMechanochemicalSolution(solMesh, solOld, W, parameters, solOptions);     
+    [solNew, gammaNew] = LinearElasticFoundationSolution(solMesh, solOld, W, parameters, solOptions);     
     
     % Update the solutions and gamma
     gammaOld = interp1(solOld.x, gammaNew, solNew.x);
@@ -134,7 +134,7 @@ Sols = Sols(1:(end - 1));
 gammaSols = gammaSols(1:(end - 1));
 times = times(1:(end - 1));
 
-outputDirectory = '~/Documents/Morphorods/Code/MATLAB/MechanochemicalGrowth/Solutions/';    
+outputDirectory = '../Solutions/';    
 save([outputDirectory, 'sols_k_0p02_L0_0p125_sigma0p2L_area1_mu0p6eta_n3s0_inext.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_k_0p02_L0_0p125_sigma0p2L_area1_mu0p6eta_n3s0_inext.mat'], 'gammaSols') % Gamma
 save([outputDirectory, 'times_k_0p02_L0_0p125_sigma0p2L_area1_mu0p6eta_n3s0_inext.mat'], 'times') % Times

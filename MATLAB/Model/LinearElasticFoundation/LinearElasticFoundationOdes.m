@@ -1,4 +1,4 @@
-function Odes = NonUniformGrowthOdes(x, M, MOld, parameters)
+function Odes = LinearElasticFoundationOdes(x, M, MOld, parameters)
 
 K = parameters.K;
 L = parameters.L;
