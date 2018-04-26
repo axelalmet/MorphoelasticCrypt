@@ -9,11 +9,10 @@ K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
 Eb = 1; % Bending stiffness
-nu = 10; % Spring relaxation timescale
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO
-solData = load('~/Documents/Morphorods/Code/AUTO/Output/ConstantGrowthAndStiffnesses/Solutions/planarmorphorodsk0p02L29_sol_1');
+solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
@@ -25,6 +24,7 @@ W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
+nu = 0.01*eta^(-1);
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -35,7 +35,7 @@ parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
 parameters.Eb = Eb; % Bending stiffness
 parameters.ext = 0; % Exstensibility
-parameters.nu = nu; % Foundation relaxation timescale
+parameters.nu = K/(eta*nu); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
@@ -49,7 +49,7 @@ thetaOld = solFromData.y(6,:);
 n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
 
 gammaOld = 1;
-firstGamma = gammaOld.*(1 + dt*(eta*W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
+firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
 % parameters.K = K.*firstGamma;
@@ -63,12 +63,14 @@ DerivFun = @(x, M) LinearViscoelasticFoundationOdes(x, M, solFromData, parameter
 % Set the boundary conditions 
 BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
 
+tic
 % Set the tolerances and max. number of mesh points
-solOptions = bvpset('RelTol', 1e-8,'AbsTol', 1e-8, 'NMax', 1e9, 'Vectorized', 'On');
+solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
 
 % Solve the system. 
 numSol = bvp4c(DerivFun, BcFun, solFromData, solOptions);
 
+toc
 % plot(initSol.x, initSol.y(3,:))
 
 initSol.x = solFromData.x;
@@ -85,7 +87,7 @@ solMesh = solFromData.x;
 dt = 2.5*1e-2;
 parameters.dt = dt; 
 
-TMax = 0.75;
+TMax = 3.1;
 times = [0, 1e-3:dt:TMax];
 numSols = length(times);
 
@@ -106,6 +108,8 @@ gammaSols{1} = [L.*flatSol.x; ones(1, length(flatSol.x))];
 % First non-trivial solution
 Sols{2} = [initSol.x; initSol.y];
 gammaSols{2} = [L.*initSol.x; gammaOld];
+
+tic
 
 % Update the solutions in time
 for i = 3:numSols
@@ -135,12 +139,14 @@ for i = 3:numSols
                         
 end
 
-%% Save the solutions
-Sols = Sols(1:(end - 3));
-gammaSols = gammaSols(1:(end - 3));
-times = times(1:(end - 3));
+toc
 
-outputDirectory = '~/Documents/Morphorods/Code/MATLAB/MechanochemicalGrowth/Solutions/LinearViscoelasticFoundation/';    
-save([outputDirectory, 'sols_nu_10_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
-save([outputDirectory, 'gamma_nu_10_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
-save([outputDirectory, 'times_nu_10_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times
+%% Save the solutions
+Sols = Sols(1:(end - 16));
+gammaSols = gammaSols(1:(end - 16));
+times = times(1:(end - 16)); 
+
+outputDirectory = '../../Solutions/LinearViscoelasticFoundation/';    
+save([outputDirectory, 'sols_nu_2_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
+save([outputDirectory, 'gamma_nu_2_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
+save([outputDirectory, 'times_nu_2_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times
