@@ -24,7 +24,8 @@ W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = 1*eta^(-1);
+nu = eta^(-1);
+
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -52,7 +53,7 @@ gammaOld = 1;
 firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
-% parameters.K = K.*firstGamma;
+parameters.K = K.*firstGamma./trapz(solFromData.x, firstGamma);
 
 parameters.PX = (xOld - SOld);
 parameters.PY = yOld;
@@ -84,10 +85,10 @@ solOld = initSol;
 solMesh = solFromData.x;
     
 % Set the times we want to solve the problem for
-dt = 5*1e-3;
+dt = 2.5*1e-2;
 parameters.dt = dt; 
 
-TMax = 1.0;
+TMax = 4.5;
 times = [0, 1e-3:dt:TMax];
 numSols = length(times);
 
@@ -144,11 +145,8 @@ end
 toc
 
 %% Save the solutions
-Sols = Sols(1:(end - 16));
-gammaSols = gammaSols(1:(end - 16));
-times = times(1:(end - 16)); 
 
 outputDirectory = '../../Solutions/LinearViscoelasticFoundation/';    
-save([outputDirectory, 'sols_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
-save([outputDirectory, 'gamma_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
-save([outputDirectory, 'times_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times
+save([outputDirectory, 'sols_nu_0p02_k_0p02_sigmak_0p1L_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
+save([outputDirectory, 'gamma_nu_0p02_k_0p02_sigmak_0p1L_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
+save([outputDirectory, 'times_nu_0p02_k_0p02_sigmak_0p1L_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times
