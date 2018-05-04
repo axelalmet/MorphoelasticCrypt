@@ -8,7 +8,7 @@ L = 2*sqrt(3)*L0/h; %Dimensionless length
 K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
-Eb = 1; % Bending stiffness
+Eb = 0.75; % Bending stiffness
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO
@@ -24,7 +24,7 @@ W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = 0eta^(-1);
+nu = eta^(-1);
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -33,7 +33,7 @@ parameters.mu = mu; % Rate of mechanical inhibition
 parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
-parameters.Eb = Eb; % Bending stiffness
+parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
 parameters.ext = 0; % Exstensibility
 parameters.nu = K/(eta*nu); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
@@ -52,7 +52,7 @@ gammaOld = 1;
 firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
-parameters.K = K.*firstGamma;
+% parameters.K = K.*firstGamma;
 
 parameters.PX = (xOld - SOld);
 parameters.PY = yOld;
@@ -124,7 +124,7 @@ for i = 3:numSols
     parameters.PX = interp1(solOld.x, PNew(1,:), solNew.x);
     parameters.PY = interp1(solOld.x, PNew(2,:), solNew.x);
     
-    parameters.K = K.*gammaOld;
+%     parameters.K = K.*gammaOld;
     
     % Stop the solution if net growth drops below unity or the curve
     % self-intersects
@@ -146,9 +146,9 @@ end
 
 toc
 
-%% Save the solutions
+% Save the solutions
 
 outputDirectory = '../../Solutions/LinearViscoelasticFoundation/';    
-save([outputDirectory, 'sols_nu_0p02_k_0p02_growthdependentk_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
-save([outputDirectory, 'gamma_nu_0p02_k_0p02_growthdependentk_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
-save([outputDirectory, 'times_nu_0p02_k_0p02_growthdependentk_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times
+save([outputDirectory, 'sols_Eb_0p75_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'Sols') % Solutions
+save([outputDirectory, 'gamma_Eb_0p75_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'gammaSols') % Gamma
+save([outputDirectory, 'times_Eb_0p75_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext.mat'], 'times') % Times

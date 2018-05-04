@@ -1,27 +1,28 @@
-function Odes = LinearViscoelasticFoundationOdes(x, M, MOld, parameters)
+function Odes = EvolvingReferenceFoundationOdes(x, M, MOld, parameters)
 
 K = parameters.K;
 L = parameters.L;
-nu = parameters.nu;
+nu1 = parameters.nu1;
+nu3 = parameters.nu3;
 dt = parameters.dt;
 gamma = parameters.gamma;
 Es = parameters.Es;
 Eb = parameters.Eb;
 ext = parameters.ext;
 
-XOld = MOld.y(2,:);
-YOld = MOld.y(3,:);
-PXOld = parameters.PX;
-PYOld = parameters.PY;
+r1Old = MOld.y(2,:);
+r3Old = MOld.y(3,:);
+P1Old = parameters.P1;
+P3Old = parameters.P3;
 
-    function dMdS = VicoelasticFoundationEqns(x, M)
+    function dMdS = EvolvingReferenceEqns(x, M)
         
         % Define the state variables
         S = M(1,:);
-        X = M(2,:);
-        Y = M(3,:);
-        F = M(4,:);
-        G = M(5,:);
+        r1 = M(2,:);
+        r3 = M(3,:);
+        n1 = M(4,:);
+        n3 = M(5,:);
         theta = M(6,:);
         m = M(7,:);
         
@@ -46,42 +47,42 @@ PYOld = parameters.PY;
             Eb = interp1(MOld.x, Eb, x);
         end
         
-        if (length(XOld) > 1)
-            XOld = interp1(MOld.x, XOld, x);
+        if (length(r1Old) > 1)
+            r1Old = interp1(MOld.x, r1Old, x);
         end
         
-        if (length(YOld) > 1)
-            YOld = interp1(MOld.x, YOld, x);
+        if (length(r3Old) > 1)
+            r3Old = interp1(MOld.x, r3Old, x);
         end
         
-        if (length(PXOld) > 1)
-            PXOld = interp1(MOld.x, PXOld, x);
+        if (length(P1Old) > 1)
+            P1Old = interp1(MOld.x, P1Old, x);
         end
         
-        if (length(PYOld) > 1)
-            PYOld = interp1(MOld.x, PYOld, x);
+        if (length(P3Old) > 1)
+            P3Old = interp1(MOld.x, P3Old, x);
         end
         
         % If the model is extensible, set alpha to the tension, otherwise,
         % set alpha = 1.
         if (ext == 1)
-            alpha = 1 + (F.*cos(theta) + G.*sin(theta))./Es;
+            alpha = 1 + n3./Es;
         else
             alpha = 1;
         end
         
         dSdS = L.*ones(1, length(S));
-        dxdS = L.*gamma.*alpha.*cos(theta);
-        dydS = L.*gamma.*alpha.*sin(theta);
-        dFdS = L*K.*gamma.*alpha.*(X - XOld + (1 - dt*nu).*PXOld);
-        dGdS = L*K.*gamma.*alpha.*(Y - YOld + (1 - dt*nu).*PYOld);
+        dr1dS = zeros(1, length(S));
+        dr3dS = L.*gamma.*alpha;
+        dn1dS = L*K.*alpha.*gamma.*(P1Old + dt*nu1.*(r1Old - P1Old));
+        dn3dS = L*K.*alpha.*gamma.*(P3Old + dt*nu3.*(r3Old - P3Old));
         dthetadS = L.*gamma.*m./Eb;
-        dmdS = L.*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
+        dmdS = -L.*gamma.*alpha.*n1;
 
-        dMdS = [dSdS; dxdS; dydS; dFdS; dGdS; dthetadS; dmdS];
+        dMdS = [dSdS; dr1dS; dr3dS; dn1dS; dn3dS; dthetadS; dmdS];
         
     end
 
-Odes = VicoelasticFoundationEqns(x, M);
+Odes = EvolvingReferenceEqns(x, M);
 
 end

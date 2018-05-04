@@ -1,4 +1,4 @@
-function EvolveShapeWithLinearViscoelasticFoundation
+function EvolveShapeWithHybridFoundation
 % Set the parameters
 kf = 0.16; % Dimensional foundational stiffness
 h = 0.015; % Thickness of the rod cross section
@@ -8,14 +8,31 @@ L = 2*sqrt(3)*L0/h; %Dimensionless length
 K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
-Eb = 0.75; % Bending stiffness
-dt = 1e-3; % Time step
+Eb = 1.0; % Bending stiffness
+dt = 1e-4; % Time step
 
 % Get the initial solution from AUTO
 solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
+
+SOld = solFromData.y(1,:);
+xOld = solFromData.y(2,:);
+yOld = solFromData.y(3,:);
+FOld = solFromData.y(4,:);
+GOld = solFromData.y(5,:);
+thetaOld = solFromData.y(6,:);
+mOld = solFromData.y(7,:);
+
+% We are going to map the solution to (d1, d2, d3)-coordinates
+r1Old = -xOld.*sin(thetaOld) + yOld.*cos(thetaOld);
+r3Old = xOld.*cos(thetaOld) + yOld.*sin(thetaOld);
+n1Old = -FOld.*sin(thetaOld) + GOld.*cos(thetaOld);
+n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
+
+solFromData.y = [SOld; r1Old; r3Old; n1Old; n3Old; thetaOld; mOld];
+
 % 
 sigma = 0.1*L; % "Width" of Wnt gradient
 % % Define the Wnt function
@@ -24,7 +41,8 @@ W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = eta^(-1);
+nu1 = eta^(-1);
+nu3 = eta^(-1);
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -33,20 +51,13 @@ parameters.mu = mu; % Rate of mechanical inhibition
 parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
-parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
+parameters.Eb = Eb; % Bending stiffness
 parameters.ext = 0; % Exstensibility
-parameters.nu = K/(eta*nu); % Foundation relaxation timescale
+parameters.nu1 = K/(eta*nu1); % Foundation relaxation timescale
+parameters.nu3 = K/(eta*nu3); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
-
-SOld = solFromData.y(1,:);
-xOld = solFromData.y(2,:);
-yOld = solFromData.y(3,:);
-FOld = solFromData.y(4,:);
-GOld = solFromData.y(5,:);
-thetaOld = solFromData.y(6,:);
-n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
 
 gammaOld = 1;
 firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
@@ -54,14 +65,14 @@ parameters.gamma = firstGamma;
 
 % parameters.K = K.*firstGamma;
 
-parameters.PX = (xOld - SOld);
-parameters.PY = yOld;
+parameters.P1 = zeros(1, length(SOld));
+parameters.P3 = r3Old - SOld;
 
 % Define the ODEs and BCs
-DerivFun = @(x, M) LinearViscoelasticFoundationOdes(x, M, solFromData, parameters);
+DerivFun = @(x, M) HybridFoundationNonlinearGeomOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
-BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) NonlinearGeomBCs(Ml, Mr, parameters);
 
 tic
 % Set the tolerances and max. number of mesh points
