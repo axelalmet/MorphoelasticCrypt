@@ -11,8 +11,9 @@ Es = 1; % Stretching stiffness
 Eb = 0.75; % Bending stiffness
 dt = 1e-3; % Time step
 
-% Get the initial solution from AUTO
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
+% Get the initial solution from AUTO 
+solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1'); %
+% Cartesian basis
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
@@ -40,6 +41,7 @@ parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
 
+% Cartesian basis solution extraction
 SOld = solFromData.y(1,:);
 xOld = solFromData.y(2,:);
 yOld = solFromData.y(3,:);

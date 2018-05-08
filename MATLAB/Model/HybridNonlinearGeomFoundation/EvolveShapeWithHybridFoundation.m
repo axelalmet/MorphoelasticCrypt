@@ -12,26 +12,20 @@ Eb = 1.0; % Bending stiffness
 dt = 1e-4; % Time step
 
 % Get the initial solution from AUTO
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
+solData = load('../../../Data/planarmorphorodsdirectorbasisk0p02L29_sol_3');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
 
+% Director basis solution extraction
 SOld = solFromData.y(1,:);
-xOld = solFromData.y(2,:);
-yOld = solFromData.y(3,:);
-FOld = solFromData.y(4,:);
-GOld = solFromData.y(5,:);
+r1Old = solFromData.y(2,:);
+r3Old = solFromData.y(3,:);
+n3Old = solFromData.y(5,:);
 thetaOld = solFromData.y(6,:);
-mOld = solFromData.y(7,:);
 
-% We are going to map the solution to (d1, d2, d3)-coordinates
-r1Old = -xOld.*sin(thetaOld) + yOld.*cos(thetaOld);
-r3Old = xOld.*cos(thetaOld) + yOld.*sin(thetaOld);
-n1Old = -FOld.*sin(thetaOld) + GOld.*cos(thetaOld);
-n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
-
-solFromData.y = [SOld; r1Old; r3Old; n1Old; n3Old; thetaOld; mOld];
+xOld = -r1Old.*sin(thetaOld) + r3Old.*cos(thetaOld);
+yOld = r1Old.*cos(thetaOld) + r3Old.*sin(thetaOld);
 
 % 
 sigma = 0.1*L; % "Width" of Wnt gradient
@@ -65,11 +59,11 @@ parameters.gamma = firstGamma;
 
 % parameters.K = K.*firstGamma;
 
-parameters.P1 = zeros(1, length(SOld));
-parameters.P3 = r3Old - SOld;
+% parameters.P1 = dt.*(parameters.nu1).*r1Old;
+% parameters.P3 = r3Old - SOld.*cos(thetaOld);
 
 % Define the ODEs and BCs
-DerivFun = @(x, M) HybridFoundationNonlinearGeomOdes(x, M, solFromData, parameters);
+DerivFun = @(x, M) FlatFoundationNonlinearGeomOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
 BcFun = @(Ml, Mr) NonlinearGeomBCs(Ml, Mr, parameters);
@@ -86,6 +80,7 @@ toc
 
 initSol.x = solFromData.x;
 initSol.y = deval(numSol, solFromData.x); 
+
                             
 %%  
 gammaOld = interp1(solFromData.x, firstGamma, initSol.x);
