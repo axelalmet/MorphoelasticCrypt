@@ -12,7 +12,7 @@ Eb = 0.75; % Bending stiffness
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO 
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1'); %
+solData = load('../../Data/planarmorphorodsk0p02L29_sol_1'); %
 % Cartesian basis
 
 solFromData.x = solData(:,1)';

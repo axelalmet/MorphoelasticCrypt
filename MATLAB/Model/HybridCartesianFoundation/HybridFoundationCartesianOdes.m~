@@ -46,7 +46,6 @@ PYOld = parameters.PX;
         
         XOld = interp1(MOld.x, XOld, x);
         YOld = interp1(MOld.x, YOld, x);
-        thetaOld = interp1(MOld.x, thetaOld, x);
         PXOld = interp1(MOld.x, PXOld, x);
         PYOld = interp1(MOld.x, PYOld, x);
         
@@ -63,10 +62,7 @@ PYOld = parameters.PX;
             + (0.5*XOld.*cos(2*thetaOld) - 0.5*YOld.*cos(2*thetaOld) - PYOld).*(theta - thetaOld) ...
             + dt*(0.5*nu1*(XOld - PXOld).*(1 - cos(2*thetaOld)) - 0.5*nu1*(YOld - PYOld).*sin(2*thetaOld) ...
                 - 0.5*nu3*PXOld.*(1 + cos(2*thetaOld)) - 0.5*nu3*PYOld.*sin(2*thetaOld));
-        PY = 0.5*Y.*(1 - cos(2*theta)) + 0.5*X.*sin(2*theta) + (PYOld - 0.5*YOld.*(1 - cos(2*thetaOld)) - 0.5*XOld.*sin(2*thetaOld)) ...
-            - (0.5*XOld.*sin(2*thetaOld) - 0.5*YOld.*cos(2*thetaOld) - PXOld).*(theta - thetaOld) ...
-            + dt*(0.5*nu1*(YOld - PYOld).*(1 + cos(2*thetaOld)) - 0.5*nu1*(XOld - PXOld).*sin(2*thetaOld) ...
-                - 0.5*nu3*PYOld.*(1 + cos(2*thetaOld)) - 0.5*nu3*PXOld.*sin(2*thetaOld));
+        PY = 0.5*Y.*(1 - cos(2*theta)) + 0.5*X.*sin(2*theta) + (PYOld - 0
         
         % Model derivatives
         dSdS = L.*ones(1, length(S));

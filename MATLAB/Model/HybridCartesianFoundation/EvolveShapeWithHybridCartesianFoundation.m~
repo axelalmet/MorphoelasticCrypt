@@ -9,7 +9,7 @@ K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
 Eb = 1.0; % Bending stiffness
-dt = 1e-3; % Time step
+dt = 1e-4; % Time step
 
 % Get the initial solution from AUTO
 solData = load('../../../Data/planarmorphorodsk0p02L29_sol_3');
@@ -21,13 +21,14 @@ solFromData.y = solData(:,2:end)';
 SOld = solFromData.y(1,:);
 XOld = solFromData.y(2,:);
 YOld = solFromData.y(3,:);
-FOld = solFromData.y(4,:);
-GOld = solFromData.y(5,:);
+FOld = solFromData.y(3,
+n3Old = solFromData.y(5,:);
 thetaOld = solFromData.y(6,:);
 
-n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
+xOld = -r1Old.*sin(thetaOld) + r3Old.*cos(thetaOld);
+yOld = r1Old.*cos(thetaOld) + r3Old.*sin(thetaOld);
 
-
+% 
 sigma = 0.1*L; % "Width" of Wnt gradient
 % % Define the Wnt function
 W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
@@ -57,19 +58,18 @@ gammaOld = 1;
 firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
-parameters.PX = 0.5*XOld.*(1 + cos(2*thetaOld)) + 0.5*YOld.*sin(2*thetaOld) - SOld ...
-    + (0.5*SOld).*(thetaOld);
-parameters.PY = 0.5*YOld.*(1 - cos(2*thetaOld)) + 0.5*XOld.*sin(2*thetaOld);    
+% parameters.P1 = dt.*(parameters.nu1).*r1Old;
+% parameters.P3 = r3Old - SOld.*cos(thetaOld);
 
 % Define the ODEs and BCs
 DerivFun = @(x, M) HybridFoundationCartesianOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
-BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) NonlinearGeomBCs(Ml, Mr, parameters);
 
 tic
 % Set the tolerances and max. number of mesh points
-solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e9, 'Vectorized', 'On');
+solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
 
 % Solve the system. 
 numSol = bvp4c(DerivFun, BcFun, solFromData, solOptions);
