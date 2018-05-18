@@ -14,7 +14,7 @@ dt = parameters.dt;
 
 % Define new gamma
 gammaOld = parameters.gamma;
-gammaNew = gammaOld.*(1 + dt*(eta.*W(solOld.x, sigma) + mu.*(n3Old - n3s)));
+gammaNew = gammaOld.*(1 + dt*(W(solOld.x, sigma) + mu.*(n3Old - n3s)));
 
 % Define the ODEs
 Odes = @(x, M) LinearElasticFoundationOdes(x, M, solOld, parameters);

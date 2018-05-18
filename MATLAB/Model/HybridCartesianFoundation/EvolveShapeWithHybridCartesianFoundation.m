@@ -12,7 +12,7 @@ Eb = 1.0; % Bending stiffness
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_3');
+solData = load('../../Data/planarmorphorodsk0p02L29_sol_3');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
@@ -60,6 +60,9 @@ parameters.gamma = firstGamma;
 parameters.PX = 0.5*XOld.*(1 + cos(2*thetaOld)) + 0.5*YOld.*sin(2*thetaOld) - SOld ...
     + (0.5*SOld).*(thetaOld);
 parameters.PY = 0.5*YOld.*(1 - cos(2*thetaOld)) + 0.5*XOld.*sin(2*thetaOld);    
+
+parameters.nu1 = 0;
+parameters.nu3 = 0;
 
 % Define the ODEs and BCs
 DerivFun = @(x, M) HybridFoundationCartesianOdes(x, M, solFromData, parameters);
