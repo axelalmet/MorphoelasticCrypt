@@ -1,4 +1,4 @@
-function EvolveShapeWithLinearViscoelasticFoundation
+function EvolveShapeWithLinearMaxwellFoundation
 % Set the parameters
 kf = 0.08; % Dimensional foundational stiffness
 h = 0.015; % Thickness of the rod cross section
@@ -9,11 +9,11 @@ y0  = 6*L;
 K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
-Eb = 1; % Bending stiffness
+Eb = 0.75; % Bending stiffness
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO 
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1'); %
+solData = load('../../../../Data/planarmorphorodsk0p02L29_sol_1'); %
 % Cartesian basis
 
 solFromData.x = solData(:,1)';
@@ -30,7 +30,7 @@ W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = 1e-3*eta^(-1);
+nu = 1*eta^(-1);
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -40,7 +40,7 @@ parameters.mu = mu; % Rate of mechanical inhibition
 parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
-parameters.Eb = Eb; % Bending stiffness
+parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
 parameters.ext = 0; % Exstensibility
 parameters.nu = K/(eta*nu); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
@@ -66,7 +66,7 @@ parameters.gamma = firstGamma;
 parameters.P = DeltaOld - (parameters.y0);
 
 % Define the ODEs and BCs
-DerivFun = @(x, M) LinearViscoelasticFoundationOdes(x, M, solFromData, parameters);
+DerivFun = @(x, M) LinearMaxwellFoundationOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
 BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
@@ -123,7 +123,7 @@ tic
 for i = 3:numSols
         
     % Update the solution
-    [solNew, gammaNew, PNew] = UpdateApproximatedLinearViscoelasticSolution(solMesh, solOld, W, parameters, solOptions);     
+    [solNew, gammaNew, PNew] = UpdateLinearMaxwellSolution(solMesh, solOld, W, parameters, solOptions);     
     
     % Update the solutions, gamma, and the spring stresses
     gammaOld = interp1(solOld.x, gammaNew, solNew.x);
@@ -154,8 +154,8 @@ toc
 
 % Save the solutions
 
-outputDirectory = '../../Solutions/ApproximatedLinearViscoelasticFoundation/'; 
-outputValues = 'Eb_1_nu_0_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext';
+outputDirectory = '../../Solutions/LinearViscoelasticFoundation/Maxwell/'; 
+outputValues = 'Eb_1_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'gammaSols') % Gamma
 save([outputDirectory, 'times_', outputValues, '.mat'], 'times') % Times

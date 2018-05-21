@@ -1,8 +1,7 @@
-function Odes = LinearViscoelasticFoundationOdes(x, M, MOld, parameters)
+function Odes = LinearMaxwellFoundationOdes(x, M, MOld, parameters)
 
 K = parameters.K;
 L = parameters.L;
-y0 = parameters.y0;
 nu = parameters.nu;
 dt = parameters.dt;
 gamma = parameters.gamma;
