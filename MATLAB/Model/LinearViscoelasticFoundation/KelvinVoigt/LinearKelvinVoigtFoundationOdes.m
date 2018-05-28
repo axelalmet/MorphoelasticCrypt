@@ -76,13 +76,15 @@ POld = parameters.P;
         DeltaOld = sqrt((XOld - SOld).^2 + (YOld).^2);
         
         % Update the viscoelastic stress in time
-        P = Delta - y0 + (dt*nu)^(-1).*(Delta - DeltaOld); 
+        P = DeltaOld - y0 + (dt*nu)^(-1).*(Delta - DeltaOld); 
         
         dSdS = L.*ones(1, length(S));
         dxdS = L.*gamma.*alpha.*cos(theta);
         dydS = L.*gamma.*alpha.*sin(theta);
         dFdS = L*K.*gamma.*alpha.*P.*(X - S)./Delta;
         dGdS = L*K.*gamma.*alpha.*P.*(Y)./Delta;
+%         dFdS = L*K.*P.*(X - S)./Delta;
+%         dGdS = L*K.*P.*(Y)./Delta;
         dthetadS = L.*gamma.*m./Eb;
         dmdS = L.*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
 

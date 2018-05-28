@@ -80,8 +80,10 @@ POld = parameters.P;
         dSdS = L.*ones(1, length(S));
         dxdS = L.*gamma.*alpha.*cos(theta);
         dydS = L.*gamma.*alpha.*sin(theta);
-        dFdS = L*K.*gamma.*alpha.*P.*(X - S)./Delta;
-        dGdS = L*K.*gamma.*alpha.*P.*(Y)./Delta;
+%         dFdS = L*K.*gamma.*alpha.*P.*(X - S)./Delta;
+%         dGdS = L*K.*gamma.*alpha.*P.*(Y)./Delta;
+        dFdS = L*K.*P.*(X - S)./Delta;
+        dGdS = L*K.*P.*(Y)./Delta;
         dthetadS = L.*gamma.*m./Eb;
         dmdS = L.*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
 

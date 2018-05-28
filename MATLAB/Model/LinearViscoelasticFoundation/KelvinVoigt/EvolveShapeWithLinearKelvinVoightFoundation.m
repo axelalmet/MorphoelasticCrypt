@@ -1,6 +1,6 @@
-function EvolveShapeWithLinearKelvinVoightFoundation
+function EvolveShapeWithLinearKelvinVoigtFoundation
 % Set the parameters
-kf = 0.08; % Dimensional foundational stiffness
+kf = 0.16; % Dimensional foundational stiffness
 h = 0.015; % Thickness of the rod cross section
 w = 0.01; % Width of the rod cross section
 L0 = 0.125; % Dimensional length of the rod
@@ -9,7 +9,7 @@ y0  = 6*L;
 K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
-Eb = 1; % Bending stiffness
+Eb = 0.75; % Bending stiffness
 dt = 1e-3; % Time step
 
 % Get the initial solution from AUTO 
@@ -23,14 +23,14 @@ solFromData.y = solData(:,2:end)';
 solFromData.y(3,:) = y0 + solFromData.y(3,:);
 
 % 
-sigma = 0.1*L; % "Width" of Wnt gradient
+sigma = 2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
 % % Define the Wnt function
 W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = 1*eta^(-1);
+nu = (1/30)*eta^(-1);
 
 parameters.K = K;% Foundation stiffness
 parameters.L = L; % Rod length
@@ -40,9 +40,9 @@ parameters.mu = mu; % Rate of mechanical inhibition
 parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
-parameters.Eb = Eb; % Bending stiffness
+parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
 parameters.ext = 0; % Exstensibility
-parameters.nu = K/(eta*nu); % Foundation relaxation timescale
+parameters.nu = kf/(eta*nu); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
@@ -62,8 +62,7 @@ firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
 
-parameters.P = DeltaOld - (parameters.y0) +  ...
-                ((parameters.nu)*parameters.dt)^(-1).*(DeltaOld - (parameters.y0));
+parameters.P = ((parameters.nu)*parameters.dt)^(-1).*(DeltaOld - (parameters.y0));
 
 % Define the ODEs and BCs
 DerivFun = @(x, M) LinearKelvinVoigtFoundationOdes(x, M, solFromData, parameters);
@@ -88,6 +87,9 @@ initSol.y = deval(numSol, solFromData.x);
 gammaOld = interp1(solFromData.x, firstGamma, initSol.x);
 parameters.gamma = gammaOld;
 solOld = initSol;
+DeltaOld = ((xOld - SOld).^2 + yOld.^2).^0.5;
+
+parameters.P = (dt*nu)^(-1).*(DeltaOld - y0); 
 
 solMesh = solFromData.x;
     
@@ -154,8 +156,9 @@ toc
 
 % Save the solutions
 
-outputDirectory = '../../Solutions/LinearViscoelasticFoundation/KelvinVoigt/'; 
-outputValues = 'Eb_1_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext';
+outputDirectory = '../../../Solutions/LinearViscoelasticFoundation/KelvinVoigt/'; 
+outputValues = 'Eb_0p75_sigmaE_2w_nu_4p8_k_0p02_L0_0p125_sigma_2w_area_1_mu_0_inext_initforce';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'gammaSols') % Gamma
 save([outputDirectory, 'times_', outputValues, '.mat'], 'times') % Times
+save([outputDirectory, 'parameters_', outputValues, '.mat'], 'parameters') % Times

@@ -1,6 +1,6 @@
 function EvolveShapeWithLinearMaxwellFoundation
 % Set the parameters
-kf = 0.08; % Dimensional foundational stiffness
+kf = 0.16; % Dimensional foundational stiffness
 h = 0.015; % Thickness of the rod cross section
 w = 0.01; % Width of the rod cross section
 L0 = 0.125; % Dimensional length of the rod
@@ -23,16 +23,16 @@ solFromData.y = solData(:,2:end)';
 solFromData.y(3,:) = y0 + solFromData.y(3,:);
 
 % 
-sigma = 0.1*L; % "Width" of Wnt gradient
+sigma = 2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
 % % Define the Wnt function
 W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 
 eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one
 % eta = 1;
 mu = 0; 
-nu = 1*eta^(-1);
+nu = (1.0/30.0)*eta^(-1);
 
-parameters.K = K;% Foundation stiffness
+parameters.K = K;% Foundation stiffn`ess
 parameters.L = L; % Rod length
 parameters.y0 = y0; % Rod centreline
 parameters.sigma = sigma; % Width of wnt gradient
@@ -42,7 +42,7 @@ parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
 parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
 parameters.ext = 0; % Exstensibility
-parameters.nu = K/(eta*nu); % Foundation relaxation timescale
+parameters.nu = kf/(eta*nu); % Foundation relaxation timescale
 parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
@@ -88,6 +88,13 @@ initSol.y = deval(numSol, solFromData.x);
 gammaOld = interp1(solFromData.x, firstGamma, initSol.x);
 parameters.gamma = gammaOld;
 solOld = initSol;
+    
+initS = initSol.y(1,:);
+initX = initSol.y(2,:);
+initY = initSol.y(3,:);
+
+initDelta = sqrt((initX - initS).^2 + (initY).^2);
+parameters.P = initDelta - (parameters.y0);
 
 solMesh = solFromData.x;
     
@@ -102,6 +109,7 @@ numSols = length(times);
 % Initialise the solutions
 Sols = cell(numSols, 1);
 gammaSols = cell(numSols, 1);
+stressSols = cell(numSols, 1);
 
 %  The first solution is always flat
 flatSol.x = initSol.x;
@@ -112,10 +120,12 @@ flatSol.y(5:end,:) = 0.*flatSol.y(5:end,:);
 
 Sols{1} = [flatSol.x; flatSol.y];
 gammaSols{1} = [L.*flatSol.x; ones(1, length(flatSol.x))];
+stressSols{1} = [flatSol.x; flatSol.y];
 
 % First non-trivial solution
 Sols{2} = [initSol.x; initSol.y];
 gammaSols{2} = [L.*initSol.x; gammaOld];
+stressSols{2} = [L.*initSol.x; parameters.P];
 
 tic
 
@@ -139,6 +149,7 @@ for i = 3:numSols
         Sols = Sols(1:(i - 1));
         gammaSols = gammaSols(1:(i - 1));
         times = times(1:(i - 1));
+        stressSols = stressSols(1:(i - 1));
         
         break
     end
@@ -147,6 +158,7 @@ for i = 3:numSols
 
     Sols{i} = [solOld.x; solOld.y];
     gammaSols{i} = [L.*solNew.x; gammaOld];
+    stressSols{i} = [L.*solNew.x; parameters.P];
                         
 end
 
@@ -154,8 +166,11 @@ toc
 
 % Save the solutions
 
-outputDirectory = '../../Solutions/LinearViscoelasticFoundation/Maxwell/'; 
-outputValues = 'Eb_1_nu_0p02_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext';
+outputDirectory = '../../../Solutions/LinearViscoelasticFoundation/Maxwell/'; 
+outputValues = 'Eb_0p75_sigmaE_2w_nu_4p8_k_0p02_L0_0p125_sigma_2w_area_1_mu_0_inext_currentforce';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'gammaSols') % Gamma
+save([outputDirectory, 'maxwellstresses_', outputValues,'.mat'], 'stressSols') % Foundation stresses
 save([outputDirectory, 'times_', outputValues, '.mat'], 'times') % Times
+save([outputDirectory, 'parameters_', outputValues, '.mat'], 'parameters') % Times
+

@@ -41,4 +41,4 @@ XNew = SolNew.y(2,:);
 YNew = SolNew.y(3,:);
 DeltaNew = sqrt((XNew - SNew).^2 + (YNew).^2);
 
-PNew = DeltaNew - y0  + (dt*nu).^(-1).*(DeltaNew - DeltaOld);
+PNew = DeltaOld - y0  + (dt*nu).^(-1).*(DeltaNew - DeltaOld);

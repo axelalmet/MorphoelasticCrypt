@@ -15,12 +15,12 @@ Eb = 0.75; % Bending stiffness
 dt = 1e-3;
 
 % Get the initial solution from AUTO
-solData = load('../../Data/planarmorphorodsk0p02L29_sol_1');
+solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
 
-sigma = 0.1*L; % "Width" of Wnt gradient
+sigma = 2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
 % Define the Wnt function
 W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
 
@@ -49,8 +49,6 @@ n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
 gammaOld = 1;
 firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
-
-% parameters.K = K.*firstGamma;
 
 % Define the ODEs and BCs
 DerivFun = @(x, M) LinearElasticFoundationOdes(x, M, solFromData, parameters);
@@ -140,7 +138,7 @@ gammaSols = gammaSols(1:(end - 1));
 times = times(1:(end - 1));
 
 outputDirectory = '../../Solutions/LinearElasticFoundation/'; 
-outputValues = 'Eb_0p75_sigmaE_0p1L_k_0p02_L0_0p125_sigma_0p1L_area_1_mu_0_inext';
+outputValues = 'Eb_0p75_sigmaE_2w_k_0p02_L0_0p125_sigma_2w_area_1_mu_0_inext';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'gammaSols') % Gamma
 save([outputDirectory, 'times_', outputValues, '.mat'], 'times') % Times
