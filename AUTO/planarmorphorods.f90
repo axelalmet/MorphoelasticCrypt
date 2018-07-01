@@ -8,7 +8,7 @@
 !---------- ---- 
 
  IMPLICIT NONE
- INTEGER, INTENT(IN) :: NDIM, IJAC, ICP(*)
+ INTEGER, INTENT(IN) :: NDIM,c IJAC, ICP(*)
  DOUBLE PRECISION, INTENT(IN) :: U(NDIM), PAR(*)
  DOUBLE PRECISION, INTENT(OUT) :: F(NDIM)
  DOUBLE PRECISION, INTENT(INOUT) :: DFDU(NDIM,*), DFDP(NDIM,*)
@@ -53,14 +53,14 @@
  DOUBLE PRECISION h, w, L0, L, y0
 
  L0 = 0.125
- h = 0.015
+ h = 0.011
  w = 0.01
  L = 2.d0*(3.d0)**0.5*L0/h
- H = 6.d0*2.d0*(3.d0)**0.5*L0/h
+ H = 0.d0*2.d0*(3.d0)**0.5*L0/h
 
    PAR(1) = 1.d0 ! Set gamma to one 
-   PAR(2) = 0.02  ! Set k
-   PAR(3) = L   ! Set L  
+   PAR(2) = 0.0001  ! Set k
+   PAR(3) = 20.0  ! Set L  
    PAR(4) = H ! Set H
 
  END SUBROUTINE STPNT

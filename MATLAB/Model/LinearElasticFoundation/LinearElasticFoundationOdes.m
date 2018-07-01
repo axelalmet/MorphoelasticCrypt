@@ -21,11 +21,7 @@ ext = parameters.ext;
         theta = M(6,:);
         m = M(7,:);
         
-        % Interpolate the parameters if they are non-constant
-        if (length(gamma) > 1)
-            gamma = interp1(MOld.x, gamma, x).*(length(gamma) > 1);
-        end
-        
+        % Interpolate the parameters if they are non-constant        
         if (length(gamma) > 1)
             gamma = interp1(MOld.x, gamma, x);
         end

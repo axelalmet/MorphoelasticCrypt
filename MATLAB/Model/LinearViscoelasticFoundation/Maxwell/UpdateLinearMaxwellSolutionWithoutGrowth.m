@@ -1,17 +1,20 @@
-function [SolNew, PNew] = UpdateLinearMaxwellSolutionWithoutGrowth(solMesh, solOld, parameters, options)
+function [SolNew, PNew, uHatNew] = UpdateLinearMaxwellSolutionWithoutGrowth(solMesh, solOld, parameters, options)
 
 % Get the relevant parameters to update growth in time
 SOld = solOld.y(1,:);
 XOld = solOld.y(2,:);
 YOld = solOld.y(3,:);
-
+mOld = solOld.y(7,:);
 DeltaOld = sqrt((XOld - SOld).^2 + (YOld).^2);
 
 nu = parameters.nu;
+etaK = parameters.etaK;
 dt = parameters.dt;
+Eb = parameters.Eb;
 
 % Spring stresses
 POld = parameters.P;
+uHatOld = parameters.uHat;
 
 % Define the ODEs
 Odes = @(x, M) LinearMaxwellFoundationOdes(x, M, solOld, parameters);
@@ -32,3 +35,4 @@ YNew = SolNew.y(3,:);
 DeltaNew = sqrt((XNew - SNew).^2 + (YNew).^2);
 
 PNew = DeltaNew - DeltaOld + (1 - dt*nu).*POld; 
+uHatNew = uHatOld + etaK*dt.*mOld./Eb;

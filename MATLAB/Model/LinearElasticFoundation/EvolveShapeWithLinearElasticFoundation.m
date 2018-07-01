@@ -2,29 +2,29 @@ function EvolveShapeWithLinearElasticFoundation
 % close all
 
 % Set the parameters
-kf = 0.16; % Dimensional foundational stiffness
+kf = 0.08; % Dimensional foundational stiffness
 h = 0.015; % Thickness of the rod cross section
 w = 0.01; % Width of the rod cross section
-L0 = 0.125; % Dimensional length of the rod
+L0 = 0.125; % Dimensional length of the rod`
 L = 2*sqrt(3)*L0/h; %Dimensionless length
 y0 = 0;
 K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
 Eb = 0.75; % Bending stiffness
-dt = 1e-3;
+dt = 5*1e-3;
 
 % Get the initial solution from AUTO
-solData = load('../../../Data/planarmorphorodsk0p02L29_sol_1');
+solData = load('../../../Data/planarmorphorodsk0p01L29Eb0p75halfint_sol_1'); %
 
 solFromData.x = solData(:,1)';
 solFromData.y = solData(:,2:end)';
 
-sigma = 2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
+sigma = 2*sqrt(3)*w/h; % "Width" of Wnt gradient
 % Define the Wnt function
-W = @(S, width) exp(-(L*(S - 0.5)/width).^2);
+W = @(S, width) exp(-(0.5*L*(S - 1)/width).^2);
 
-eta = 1.0/trapz(solFromData.x, W(solFromData.x, sigma)); % Define eta such that the area is unit one.
+eta = 1/24;
 mu = 0;
 % 
 parameters.K = K;% Foundation stiffness
@@ -36,7 +36,7 @@ parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
 parameters.Eb = 1 - Eb.*W(solFromData.x, sigma); % Bending stiffness
-parameters.ext = 0; % Exstensibility
+parameters.ext = 0; % Extensibility
 parameters.dt = dt; % Time step
 
 %% Solve the initial bvp to obtain a structure for the first solution.
@@ -54,7 +54,8 @@ parameters.gamma = firstGamma;
 DerivFun = @(x, M) LinearElasticFoundationOdes(x, M, solFromData, parameters);
 
 % Set the boundary conditions 
-BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
+% BcFun = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) HalfIntervalBCs(Ml, Mr, parameters);
 
 % Set the tolerances and max. number of mesh points
 solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');

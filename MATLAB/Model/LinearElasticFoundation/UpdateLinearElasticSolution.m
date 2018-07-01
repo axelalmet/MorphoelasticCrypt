@@ -20,7 +20,8 @@ gammaNew = gammaOld.*(1 + dt*(W(solOld.x, sigma) + mu.*(n3Old - n3s)));
 Odes = @(x, M) LinearElasticFoundationOdes(x, M, solOld, parameters);
 
 % Define the BCs
-Bcs = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters); 
+% Bcs = @(Ml, Mr) NonUniformGrowthBCs(Ml, Mr, parameters); 
+Bcs = @(Ml, Mr) HalfIntervalBCs(Ml, Mr, parameters); 
 
 % Define solve the ODE system using bvp4c.
 Sol = bvp4c(Odes, Bcs, solOld, options);

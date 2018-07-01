@@ -1,4 +1,4 @@
-function [SolNew, gammaNew, PNew] = UpdateLinearMaxwellSolution(solMesh, solOld, W, parameters, options)
+function [SolNew, gammaNew, PNew, uHatNew] = UpdateLinearMaxwellSolution(solMesh, solOld, W, parameters, options)
 
 % Get the relevant parameters to update growth in time
 SOld = solOld.y(1,:);
@@ -7,6 +7,7 @@ YOld = solOld.y(3,:);
 FOld = solOld.y(4,:);
 GOld = solOld.y(5,:);
 thetaOld = solOld.y(6,:);
+mOld = solOld.y(7,:);
 
 DeltaOld = sqrt((XOld - SOld).^2 + (YOld).^2);
 n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
@@ -15,10 +16,13 @@ n3s = parameters.n3s;
 sigma = parameters.sigma;
 mu = parameters.mu;
 nu = parameters.nu;
+etaK = parameters.etaK;
 dt = parameters.dt;
+Eb = parameters.Eb;
 
 % Spring stresses
 POld = parameters.P;
+uHatOld = parameters.uHat;
 
 % Define new gamma
 gammaOld = parameters.gamma;
@@ -43,3 +47,5 @@ YNew = SolNew.y(3,:);
 DeltaNew = sqrt((XNew - SNew).^2 + (YNew).^2);
 
 PNew = DeltaNew - DeltaOld + (1 - dt*nu).*POld; 
+
+uHatNew = uHatOld + etaK*dt.*mOld./Eb;
