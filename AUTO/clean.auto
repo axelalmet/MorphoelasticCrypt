@@ -1,9 +1,0 @@
-
-#=============
-# AUTO Demo bvp
-#=============
-
-print "\n***Clean the directory***"
-dl('planarmophorodsk0p1')
-shell("rm s.* b.* d.*")
-cl()

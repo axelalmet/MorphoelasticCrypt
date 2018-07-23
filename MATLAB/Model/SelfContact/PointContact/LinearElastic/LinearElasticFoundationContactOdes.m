@@ -17,8 +17,10 @@ ext = modelParams.ext;
         G = M(5,:);
         theta = M(6,:);
         m = M(7,:);
-        sc = M(8,:);
-        fC = M(9,:);
+        A = M(8,:);
+        sc = M(9,:);
+        pC = M(10,:);
+        fC = M(11,:);
 
         % Interpolate the parameters if they are non-constant
         if (length(gamma) > 1)
@@ -50,6 +52,7 @@ ext = modelParams.ext;
         end
         
         dsCdS = zeros(1, length(S));
+        dpCdS = zeros(1, length(S));
         dfCdS = zeros(1, length(S));
         
         switch region
@@ -58,26 +61,28 @@ ext = modelParams.ext;
                 dSdS = (sc).*ones(1, length(S));
                 dxdS = (sc).*gamma.*alpha.*cos(theta);
                 dydS = (sc).*gamma.*alpha.*sin(theta);
-                dFdS = (sc).*K.*(X - S);
+                dFdS = (sc).*zeros(1, length(S));
                 dGdS = (sc).*K.*Y;
                 dthetadS = (sc).*gamma.*m./Eb;
                 dmdS = (sc).*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
+                dAdS = zeros(1, length(S));
 
             case 2 % ODEs for [sc1, sc2]
                 
                 dSdS = (L - sc).*ones(1, length(S));
                 dxdS = (L - sc).*gamma.*alpha.*cos(theta);
                 dydS = (L - sc).*gamma.*alpha.*sin(theta);
-                dFdS = (L - sc).*K.*(X - S);
-                dGdS = (L - sc).*K.*Y;
+                dFdS = -(L - sc).*pC.*dydS;
+                dGdS = (L - sc).*(K.*Y + pC.*dxdS);
                 dthetadS = (L - sc).*gamma.*m./Eb;
                 dmdS = (L - sc).*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
+                dAdS = (L - sc).*X.*dydS;
                 
             otherwise
                 error('MATLAB:contactOdes:BadRegionIndex','Incorrect region index: %d',region);
         end
         
-        dMdS = [dSdS; dxdS; dydS; dFdS; dGdS; dthetadS; dmdS; dsCdS; dfCdS];
+        dMdS = [dSdS; dxdS; dydS; dFdS; dGdS; dthetadS; dmdS; dAdS; dsCdS; dpCdS; dfCdS];
     end
 
 Odes = ContactEqns(x, M, region);

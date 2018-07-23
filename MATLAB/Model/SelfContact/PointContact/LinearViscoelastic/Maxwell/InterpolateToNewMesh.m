@@ -24,7 +24,7 @@ curveInterpOne = interp1(meshOld(1:contIndexOld), curveOld(1:contIndexOld), ...
                     meshNew(1:contIndexNew));
                               
 curveInterpTwo = interp1(meshOld((contIndexOld + 1):end), curveOld((contIndexOld + 1):end), ...
-                    meshOld((contIndexNew + 1):end)); 
+                    meshNew((contIndexNew + 1):end)); 
          
 curveNew = [curveInterpOne, curveInterpTwo];
 

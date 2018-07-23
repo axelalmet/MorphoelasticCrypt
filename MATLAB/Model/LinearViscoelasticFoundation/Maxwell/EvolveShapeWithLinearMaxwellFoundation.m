@@ -23,9 +23,9 @@ solFromData.y = solData(:,2:end)';
 solFromData.y(3,:) = y0 + solFromData.y(3,:);
 
 % 
-sigma = 0.5*2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
+sigma = 2*sqrt(3)*2*w/h; % "Width" of Wnt gradient
 % % Define the Wnt function
-W = @(S, width) exp(-(L*(S - 0.5)./width).^2);
+W = @(S, width) exp(-((S - 0.5*L)./width).^2);
 
 eta = 1/24; % Define eta such that \eta^{-1} = 24 hours
 mu = 0; 
@@ -40,7 +40,7 @@ parameters.eta = eta; % Rate of chemical change
 parameters.n3s = n3s; % Target axial stress
 parameters.Es = Es; % Stretch stiffness
 parameters.b1 = b1;
-parameters.Eb = 1 - b1.*W(solFromData.x, sigma); % Bending stiffness
+parameters.Eb = 1 - b1.*W(solFromData.y(1,:), sigma); % Bending stiffness
 parameters.ext = 0; % Exstensibility
 parameters.nu = kf/(eta*nu); % Foundation relaxation timescale
 parameters.etaK = parameters.nu; % Curvature relaxation timescale
@@ -56,10 +56,12 @@ thetaOld = solFromData.y(6,:);
 n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
 
 gammaOld = 1;
-firstGamma = gammaOld.*(1 + dt*(W(solFromData.x, sigma) + mu.*(n3Old - n3s)));
+% firstGamma = gammaOld.*(1 + dt*(W(solFromData.y(1,:), sigma./gammaOld) + mu.*(n3Old - n3s)));
+firstGamma = gammaOld.*(1 + dt*(W(solFromData.y(1,:), sigma)));
 parameters.gamma = firstGamma;
 
-parameters.Eb = 1 - b1.*W(solFromData.x, sigma./firstGamma);
+parameters.Eb = 1 - b1.*W(solFromData.y(1,:), sigma./firstGamma);
+% parameters.Eb = 1 - b1.*W(solFromData.y(1,:), sigma);
 
 parameters.P = yOld - (parameters.y0);
 parameters.uHat = zeros(1, length(solFromData.x));
@@ -111,7 +113,7 @@ uHatSols = cell(numSols, 1);
 
 %  The first solution is always flat
 flatSol.x = initSol.x;
-flatSol.y = initSol.y;  
+flatSol.y = initSol.y;      
 
 flatSol.y(3,:) = 0.*flatSol.y(3,:) + y0;
 flatSol.y(5:end,:) = 0.*flatSol.y(5:end,:);
@@ -134,14 +136,14 @@ tic
 for i = 3:numSols
     
     % Update the solution
-    [solMeshNew, solNew, gammaNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellSolution(solMesh, solOld, W, parameters, solOptions);
+    [solMeshNew, solNew, gammaNew, EbNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellSolution(solMesh, solOld, W, parameters, solOptions);
     
     % Update the solutions, gamma, and the spring stresses
     gammaOld = interp1(solOld.x, gammaNew, solNew.x);
     parameters.gamma = gammaOld;
     parameters.P = interp1(solOld.x, PNew, solNew.x);
     parameters.uHat = interp1(solOld.x, uHatNew, solNew.x);
-    parameters.Eb = interp1(solOld.x, parameters.Eb, solNew.x); 
+    parameters.Eb = interp1(solOld.x, EbNew, solNew.x); 
         
     % Stop the solution if net growth drops below unity or the curve
     % self-intersects
@@ -172,7 +174,7 @@ toc
 % Save the solutions
 
 outputDirectory = '../../../Solutions/LinearViscoelasticFoundation/Maxwell/';
-outputValues = 'Eb_0p5_sigmaE_2w_simplified_initforce_nu_0p16_k_0p02_L0_0p125_currentgrowth_sigma_2w_etaK_0p16';
+outputValues = 'Eb_current_0p5_sigmaE_2w_nu_simple_init_0p16_k_0p02_L0_0p125_sigma_init_2w_etaK_0p16';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'gammaSols') % Gamma
 save([outputDirectory, 'maxwellstresses_', outputValues,'.mat'], 'stressSols') % Foundation stresses

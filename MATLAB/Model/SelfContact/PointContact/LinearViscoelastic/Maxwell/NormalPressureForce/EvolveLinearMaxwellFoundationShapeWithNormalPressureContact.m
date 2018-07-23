@@ -1,6 +1,6 @@
 function EvolveLinearMaxwellFoundationShapeWithNormalPressureContact
 % Load the solutions previously computed
-outputValues = 'Eb_0p5_sigmaE_2w_simplified_initforce_nu_0p16_k_0p02_L0_0p125_currentgrowth_sigma_2w_etaK_0p16';
+outputValues = 'Eb_current_0p5_sigmaE_2w_nu_simple_init_0p16_k_0p02_L0_0p125_sigma_init_2w_etaK_0p16';
 outputDirectory = '../../../../../../Solutions/LinearViscoelasticFoundation/Maxwell/';
 
 load([outputDirectory, 'sols_', outputValues, '.mat'], 'Sols') % Solutions
@@ -34,7 +34,7 @@ K = kf*h/(12*w); % Dimensionless foundation stiffness
 n3s = 0; % Target axial tension
 Es = 1; % Stretching stiffness
 b1 = 0.5; % Bending stiffness
-dt = 5*1e-2;
+dt = 1e-2;
 w0 = 0; % Width of contact region
 
 parameters.w0 = w0;
@@ -42,7 +42,7 @@ parameters.L = 0.5*L;
 
 sigma = 2*sqrt(3)*2*(w/h); % "Width" of Wnt gradient
 % Define the Wnt function
-W = @(S, width) exp(-(0.5*L.*(0.5.*S - 1)./width).^2);
+W = @(S, width) exp(-((S - 0.5*L)./width).^2);
 
 
 %% Construct the solution and initial guess so that bvp4c is happy
@@ -51,6 +51,7 @@ W = @(S, width) exp(-(0.5*L.*(0.5.*S - 1)./width).^2);
 possibleContactPoints = find(abs(solFromData.y(2,:) - 0.5*L) < 0.1);
 contIndexOne = possibleContactPoints(1);
 sC1Guess = solFromData.y(1, contIndexOne);
+pCGuess = 0.1;
 fCGuess = 0;
 
 xFromData = solFromData.y(2,:); 
@@ -64,8 +65,6 @@ for i = (contIndexOne + 1):length(solFromData.x)
 
 end
 
-A0Guess = AGuess((end)/2);
-
 initGamma = [gammaFromData(1:contIndexOne), gammaFromData((contIndexOne):end)];
             
 initP = [PFromData(1:contIndexOne), PFromData((contIndexOne):end)];
@@ -76,12 +75,14 @@ initSol.x = [solFromData.x(1:contIndexOne), solFromData.x(contIndexOne:end)];
 
 initSol.y = [solFromData.y(:, 1:contIndexOne), solFromData.y(:, contIndexOne:end); ...
                 0.*(1:contIndexOne), AGuess(contIndexOne:end); ...
-                (0.5*L - sC1Guess).*A0Guess.*ones(1, length(initSol.x)); ...
                 sC1Guess.*ones(1, length(initSol.x)); ...
+                pCGuess*ones(1, length(initSol.x)); ...
                 fCGuess.*ones(1, length(initSol.x))];
             
 
 %%
+if (mod(length(initSol.x), 2) == 0) % Split the solution depending on whether or not the vector is even or odd
+    
 initSol.y = initSol.y(:, 1:((end)/2));
 initSol.y(1:2, end) = [0.5*L; 0.5*L];
 initSol.y(5:6, end) = [0; 0];
@@ -98,17 +99,48 @@ initSol.x = [linspace(0, 1, contIndexOne), ...
 solMesh = initSol.x;
 
 initGamma = initGamma(1:((end)/2));
-firstGamma = initGamma.*(1 + (dt)*(W(initSol.x, sigma)));
+% firstGamma = initGamma.*(1 + (dt)*(W(initSol.y(1,:), sigma./initGamma)));
+firstGamma = initGamma.*(1 + (dt)*(W(initSol.y(1,:), sigma)));
 parameters.gamma = firstGamma;
 
-parameters.Eb = 1 - b1.*W(initSol.x, sigma./initGamma); % Bending stiffness
+% firstEb = 1 - b1.*W(initSol.y(1,:), sigma);
+firstEb = 1 - b1.*W(initSol.y(1,:), sigma./firstGamma);
 
+parameters.Eb = firstEb; % Bending stiffness
+
+else
+    initSol.y = initSol.y(:, 1:((end - 1)/2));
+    initSol.y(1:2, end) = [0.5*L; 0.5*L];
+    initSol.y(5:6, end) = [0; 0];
+    
+    initP = initP(1:((end - 1)/2));
+    parameters.P = initP;
+    
+    inituHat = inituHat(1:((end - 1)/2));
+    parameters.uHat = inituHat;
+    
+    initSol.x = [linspace(0, 1, contIndexOne), ...
+        linspace(1, 2, length(initSol.y(1,:)) - contIndexOne)];
+    
+    solMesh = initSol.x;
+    
+    initGamma = initGamma(1:((end - 1)/2));
+%     firstGamma = initGamma.*(1 + (dt)*(W(initSol.y(1,:), sigma./initGamma)));
+    firstGamma = initGamma.*(1 + (dt)*(W(initSol.y(1,:), sigma)));
+    parameters.gamma = firstGamma;
+    
+%     firstEb = 1 - b1.*W(initSol.y(1,:), sigma);
+    firstEb = 1 - b1.*W(initSol.y(1,:), sigma./firstGamma);
+
+parameters.Eb = firstEb; % Bending stiffness
+end
+% 
 
 %% Solve the initial solution
 
 % Define the ODEs and BCs
 DerivFun = @(x, M, region) SimplifiedLinearMaxwellFoundationNormalContactOdes(x, M, region, initSol, parameters);
-
+    
 % Set the boundary conditions 
 BcFun = @(Ml, Mr) SelfPointContactNormalPressureBCs(Ml, Mr, parameters);
 
@@ -119,6 +151,7 @@ tic
 % Solve the system. 
 newSol = bvp4c(DerivFun, BcFun, initSol, solOptions);
 % 
+
 numSol.x = solMesh;
 numSol.y = deval(newSol, solMesh);
 
@@ -147,7 +180,7 @@ parameters.P = firstP;
 parameters.uHat = firstuHat;
 
 % Set the times we want to solve the problem for
-dt = 2.5*1e-2;
+dt = 5*1e-3;
 parameters.dt = dt; 
 
 TMax = 0.5;
@@ -181,17 +214,17 @@ tic
 for i = 3:numSols
         
     % Update the solution
-    [solNew, gammaNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellNormalContactSolution(solMesh, solOld, W, parameters, solOptions);     
+    [solMeshNew, solNew, gammaNew, EbNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellNormalContactSolution(solMesh, solOld, W, parameters, solOptions);     
     
     % Update the solutions, gamma, and the spring stresses    
 	parameters.gamma = InterpolateToNewMesh(solNew.x, solOld.x, gammaNew);
 	parameters.P = InterpolateToNewMesh(solNew.x, solOld.x, PNew);
 	parameters.uHat = InterpolateToNewMesh(solNew.x, solOld.x, uHatNew);
-	parameters.Eb = InterpolateToNewMesh(solNew.x, solOld.x, parameters.Eb);
+	parameters.Eb = InterpolateToNewMesh(solNew.x, solOld.x, EbNew);
         
-    % Stop the solution if net growth drops below unity or the curve
-    % self-intersects
-    if ( (trapz(solNew.x, gammaNew) < 1)||(solNew.y(9,1) < 0) )
+    % Stop the solution if net growth drops below unity or the contact
+    % force becomes negative
+    if ( (trapz(solNew.x, parameters.gamma) < 0.5)||(solNew.y(11,1) < 0) )
 
         contactSols = contactSols(1:(i - 1));
         contactGammaSols = contactGammaSols(1:(i - 1));
@@ -208,16 +241,21 @@ for i = 3:numSols
     contactGammaSols{i} = [solOld.y(1,:); parameters.gamma];
     contactStressSols{i} = [solOld.y(1,:); parameters.P];
     contactuHatSols{i} = [solOld.y(1,:); parameters.uHat];
+    
+    solMesh = solMeshNew;
                         
 end
 
 toc
 
-% Save the solutions
+%% Save the solutions
+contactSols = contactSols(1:4);
+contactGammaSols = contactGammaSols(1:4);
+contactTimes = contactTimes(1:4);
+contactStressSols = contactStressSols(1:4);
+contactuHatSols = contactuHatSols(1:4);
 
-%%
-
-outputValues = 'normalcontact_Eb_0p5_sigmaE_2w_simplified_initforce_nu_0p16_k_0p02_L0_0p125_currentgrowth_sigma_2w_etaK_0p16';
+outputValues = 'normalcontact_Eb_current_0p5_sigmaE_2w_nu_simple_init_0p16_k_0p02_L0_0p125_sigma_init_2w_etaK_0p16';
 outputDirectory = '../../../../../../Solutions/LinearViscoelasticFoundation/Maxwell/';
 save([outputDirectory, 'sols_', outputValues, '.mat'], 'contactSols') % Solutions
 save([outputDirectory, 'gamma_', outputValues,'.mat'], 'contactGammaSols') % Gamma

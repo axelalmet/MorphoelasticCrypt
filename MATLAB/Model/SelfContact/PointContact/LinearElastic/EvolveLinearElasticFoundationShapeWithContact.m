@@ -61,22 +61,32 @@ possibleContactPoints = find(abs(solFromData.y(2,:) - 0.5*L) < 0.125);
 contIndexOne = possibleContactPoints(1);
 contIndexTwo = possibleContactPoints(end);
 sC1Guess = solFromData.y(1, contIndexOne);
+pCGuess = 0.0;
 fCGuess = 0;
 
-initSol.x = [solFromData.x(1:contIndexOne), solFromData.x(contIndexOne:contIndexTwo), ...
-    solFromData.x((contIndexTwo):end)];
+initSol.x = [solFromData.x(1:contIndexOne), solFromData.x(contIndexOne:end)];
 
-initSol.y = [solFromData.y(:, 1:contIndexOne), solFromData.y(:, contIndexOne:contIndexTwo), ...
-    solFromData.y(:, (contIndexTwo):end);
+AGuess = zeros(1, length(solFromData.x));
+
+for i = (contIndexOne + 1):length(solFromData.x)
+    AGuess(i) = trapz(solFromData.x(contIndexOne:i), ...
+                    solFromData.y(2,contIndexOne:i).*(parameters.gamma(contIndexOne:i)).*sin(solFromData.y(6, contIndexOne:i)));
+
+end
+
+
+initSol.y = [solFromData.y(:, 1:contIndexOne), solFromData.y(:, contIndexOne:end);
+    0.*(1:contIndexOne), AGuess(contIndexOne:end); ...
     sC1Guess.*ones(1, length(initSol.x)); ...
+    pCGuess.*ones(1, length(initSol.x)); ...
     fCGuess.*ones(1, length(initSol.x))];
                 
-initGamma = [gammaFromData(1:contIndexOne), gammaFromData(contIndexOne:contIndexTwo), ...
-                gammaFromData((contIndexTwo):end)];
+initGamma = [gammaFromData(1:contIndexOne), gammaFromData(contIndexOne:end)];
                              
-initSol.y = initSol.y(:, 1:((end - 1)/2));
+initSol.y = initSol.y(:, 1:((end)/2));
 initSol.y(1:2, end) = [0.5*L; 0.5*L];
 initSol.y(5:6, end) = [0; 0];
+
 
 initSol.x = [linspace(0, 1, contIndexOne), ...
                 linspace(1, 2, length(initSol.y(1,:)) - contIndexOne)];
@@ -90,7 +100,7 @@ GOld = initSol.y(5,:);
 thetaOld = initSol.y(6,:);
 n3Old = FOld.*cos(thetaOld) + GOld.*sin(thetaOld);
 
-initGamma = initGamma(1:(end - 1)/2);
+initGamma = initGamma(1:(end)/2);
 firstGamma = initGamma.*(1 + dt*(W(initSol.y(1,:), sigma) + mu.*(n3Old - n3s)));
 parameters.gamma = firstGamma;
 
@@ -100,7 +110,7 @@ parameters.gamma = firstGamma;
 DerivFun = @(x, M, region) LinearElasticFoundationContactOdes(x, M, region, initSol, parameters);
 
 % Set the boundary conditions 
-BcFun = @(Ml, Mr) SelfPointContactBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) SelfPointContactNormalPressureBCs(Ml, Mr, parameters);
 
 % Set the tolerances and max. number of mesh points
 solOptions = bvpset('RelTol', 1e-5,'AbsTol', 1e-5, 'NMax', 1e6, 'Vectorized', 'On');

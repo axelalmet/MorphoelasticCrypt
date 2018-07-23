@@ -28,8 +28,8 @@ uHatOld = modelParams.uHat;
         theta = M(6,:);
         m = M(7,:);
         A = M(8,:);
-        A0 = M(9,:);
-        sc = M(10,:);
+        sc = M(9,:);
+        pC = M(10,:);
         fC = M(11,:);
 
         % Interpolate the parameters if they are non-constant
@@ -91,8 +91,8 @@ uHatOld = modelParams.uHat;
             alpha = 1;
         end
         
-        dA0dS = zeros(1, length(S));
         dscdS = zeros(1, length(S));
+        dpCdS = zeros(1, length(S));
         dfCdS = zeros(1, length(S));
         
         % Update the viscoelastic stress in time
@@ -107,8 +107,8 @@ uHatOld = modelParams.uHat;
                 dSdS = (sc).*ones(1, length(S));
                 dxdS = (sc).*gamma.*alpha.*cos(theta);
                 dydS = (sc).*gamma.*alpha.*sin(theta);
-                dFdS = (sc).*fC.*dydS;
-                dGdS = (sc).*(K.*P - fC.*dxdS); 
+                dFdS = (sc).*zeros(1, length(S));
+                dGdS = (sc).*(K.*P); 
                 dthetadS = (sc).*gamma.*(m./Eb + uHat);
                 dmdS = (sc).*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
                 dAdS = zeros(1, length(S));
@@ -118,17 +118,17 @@ uHatOld = modelParams.uHat;
                 dSdS = (L - sc).*ones(1, length(S));
                 dxdS = (L - sc).*gamma.*alpha.*cos(theta);
                 dydS = (L - sc).*gamma.*alpha.*sin(theta);
-                dFdS = (L - sc).*fC.*dydS;
-                dGdS = (L - sc).*(K.*P - fC.*dxdS);              
+                dFdS = -(L - sc).*pC.*dydS;
+                dGdS = (L - sc).*(K.*P + pC.*dxdS);              
                 dthetadS = (L - sc).*gamma.*(m./Eb + uHat);
                 dmdS = (L - sc).*gamma.*alpha.*(F.*sin(theta) - G.*cos(theta));
-                dAdS = X.*dydS - A0./(L - sc);
+                dAdS = (L - sc).*X.*dydS;
 
             otherwise
                 error('MATLAB:contactodes:BadRegionIndex','Incorrect region index: %d',region);
         end
         
-        dMdS = [dSdS; dxdS; dydS; dFdS; dGdS; dthetadS; dmdS; dAdS; dA0dS; dscdS; dfCdS];
+        dMdS = [dSdS; dxdS; dydS; dFdS; dGdS; dthetadS; dmdS; dAdS; dscdS; dpCdS; dfCdS];
     end
 
 Odes = ContactEqns(x, M, region);

@@ -26,7 +26,7 @@ uHatOld = parameters.uHat;
 
 % Define new gamma
 gammaOld = parameters.gamma;
-gammaNew = gammaOld.*(1 + dt*(W(solOld.x, sigma) + mu.*(n3Old - n3s)));
+gammaNew = gammaOld.*(1 + dt*(W(solOld.y(1,:), sigma) + mu.*(n3Old - n3s)));
 
 % Define the ODEs
 Odes = @(x, M) LinearMaxwellFoundationOdes(x, M, solOld, parameters);

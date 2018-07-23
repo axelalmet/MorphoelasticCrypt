@@ -1,4 +1,4 @@
-function [solMeshNew, SolNew, gammaNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellSolution(solMeshOld, solOld, W, parameters, options)
+function [solMeshNew, SolNew, gammaNew, EbNew, PNew, uHatNew] = UpdateSimplifiedLinearMaxwellSolution(solMeshOld, solOld, W, parameters, options)
 
 % Get the relevant parameters to update growth in time
 YOld = solOld.y(3,:);
@@ -24,10 +24,14 @@ uHatOld = parameters.uHat;
 
 % Define new gamma
 gammaOld = parameters.gamma;
-gammaNew = gammaOld.*(1 + dt*(W(solOld.x, sigma) + mu.*(n3Old - n3s)));
+% gammaNew = gammaOld.*(1 + dt*(W(solOld.y(1,:), sigma./gammaOld) + mu.*(n3Old - n3s)));
+gammaNew = gammaOld.*(1 + dt*(W(solOld.y(1,:), sigma) + mu.*(n3Old - n3s)));
 
 % Set new bending stiffness
-parameters.Eb = 1 - b1.*W(solOld.x, sigma./gammaOld);
+EbNew = 1 - b1.*W(solOld.y(1,:), sigma./gammaNew);
+% EbNew = 1 - b1.*W(solOld.y(1,:), sigma);
+
+parameters.Eb = EbNew;
 
 % Define the ODEs
 Odes = @(x, M) SimplifiedLinearMaxwellFoundationOdes(x, M, solOld, parameters);
