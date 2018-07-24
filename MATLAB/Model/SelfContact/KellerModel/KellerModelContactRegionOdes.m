@@ -1,4 +1,4 @@
-function Odes = KellerModelContactOdes(x, M, region, modelParams)
+function Odes = KellerModelContactRegionOdes(x, M, region, modelParams)
 
 P = modelParams.P;
 L = modelParams.L;
@@ -16,8 +16,8 @@ L = modelParams.L;
         sc = M(8,:);
         fc = M(9,:);
         
-        dsCdS = zeros(1, length(Q));
-        dfCdS = zeros(1, length(Q));
+        dsCdS = zeros(1, length(S));
+        dfCdS = zeros(1, length(S));
         
         switch region
             case 1 % ODEs for [0, sc]
@@ -32,14 +32,13 @@ L = modelParams.L;
                 
             case 2 % ODEs for [sc, L]
                 
-                dSdS = (sc).*ones(1, length(S));
-
-                dxdS = (L - sc).*cos(theta);
-                dydS = (L - sc).*sin(theta);
-                dQdS = -(L - sc).*(k.*N);
-                dNdS = (L - sc).*(k.*Q + P);
-                dthetadS = (L - sc).*k;
-                dkdS = (L - sc).*N;
+                dSdS = (L - sc).*ones(1, length(S));
+                dxdS = zeros(1, length(S));
+                dydS = (L - sc).*ones(1, length(S));
+                dQdS = zeros(1, length(S));
+                dNdS = (L - sc).*(P);
+                dthetadS = zeros(1, length(S));
+                dkdS = zeros(1, length(S));
                 
             otherwise
                 error('MATLAB:contactOdes:BadRegionIndex','Incorrect region index: %d',region);
