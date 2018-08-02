@@ -1,13 +1,13 @@
-function TestKellerModel
+function TestKellerModelOnHalfInterval
 %% Set-up
 P = 3.25;
-L = 0.5*pi;
+L = pi;
 
 parameters.P = P;
 parameters.L = L;
 
 % First derive the buckled solution
-solMesh = 0:(5*1e-3):1;
+solMesh = 0:1e-2:1;
 
 initSol.x = solMesh;
 initSol.y = [L.*solMesh;
@@ -22,7 +22,7 @@ initSol.y = [L.*solMesh;
 DerivFun = @(x, M) KellerModelPreContactOdes(x, M, parameters);
     
 % Set the boundary conditions 
-BcFun = @(Ml, Mr) KellerModelPreContactBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) KellerModelHalfIntervalPreContactBCs(Ml, Mr, parameters);
 
 % Set the tolerances and max. number of mesh points
 solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
@@ -36,34 +36,18 @@ numSol.y = deval(newSol, solMesh);
 
 toc
 
-figure(1)
-hold on
-plot(numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(numSol.y(2,:), 2*numSol.y(3,end) - numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-numSol.y(2,:), 2*numSol.y(3,end) - numSol.y(3,:), 'k', 'linewidth', 1.5)
-title('p = 3.25')
-xlim([-1 1])
+% figure(1)
+% hold on
+% plot(numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
+% plot(-numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
+% title('p = 3.25')
+% xlim([-1 1])
 
 %%
 
 P = 4.75;
-L = 0.5*pi;
 
 parameters.P = P;
-parameters.L = L;
-
-% First derive the buckled solution
-solMesh = 0:(5*1e-3):1;
-
-initSol.x = solMesh;
-initSol.y = [L.*solMesh;
-             sin(L.*solMesh + 0.5*sin(2.*L.*solMesh)); ...
-             -cos(L.*solMesh + 0.5*sin(2.*L.*solMesh)); ...
-             0.*solMesh - 0.5*2*cos(2.*L.*solMesh); ...
-             0.*solMesh - 0.5*4*sin(2.*L.*solMesh); ...
-             L.*solMesh + 0.5*sin(2.*L.*solMesh); ...
-             ones(1, length(solMesh)) + 0.5*2*cos(L.*2.*solMesh)];
 
 % Define the ODEs and BCs
 DerivFun = @(x, M) KellerModelPreContactOdes(x, M, parameters);
@@ -76,21 +60,19 @@ solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'O
 
 tic
 % Solve the system. 
-newSol = bvp4c(DerivFun, BcFun, initSol, solOptions);
+newSol = bvp4c(DerivFun, BcFun, numSol, solOptions);
 
 numSol.x = solMesh;
 numSol.y = deval(newSol, solMesh);
 
 toc
 
-figure(2)
-hold on
-plot(numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(numSol.y(2,:), 2*numSol.y(3,end) - numSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-numSol.y(2,:), 2*numSol.y(3,end) - numSol.y(3,:), 'k', 'linewidth', 1.5)
-title('p = 4.75')
-xlim([-1 1])
+% figure(2)
+% hold on
+% plot(numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
+% plot(-numSol.y(2,:), numSol.y(3,:), 'k', 'linewidth', 1.5)
+% title('p = 4.75')
+% xlim([-1 1])
 
 %% Do a simple continuation step to contact
 
@@ -98,18 +80,21 @@ tic
 parameters.P = 5.247;
 solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
 
-solOld = numSol;
+solOld.y = [numSol.y(:, 1:(end - 1)/2), numSol.y(:, ((end + 1)/2):end)];
+solOld.y = [solOld.y; 0.5*pi.*ones(1, length(solOld.y(1,:))); 0.*ones(1, length(solOld.y(1,:)))];
+solOld.x = [linspace(0, 1, 0.5*length(solOld.y(1,:))), linspace(1, 2, 0.5*length(solOld.y(1,:)) + 1)];
+solMesh = solOld.x;
 
 % Define the ODEs and BCs
-DerivFun = @(x, M) KellerModelContactOdes(x, M, parameters);
+DerivFun = @(x, M, region) KellerModelHalfIntervalContactOdes(x, M, region, parameters);
 
 % Set the boundary conditions
-BcFun = @(Ml, Mr) KellerModelContactBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) KellerModelHalfIntervalContactBCs(Ml, Mr, parameters);
 
 contactSol = bvp4c(DerivFun, BcFun, solOld, solOptions);
 
-contactSol.x = solMesh;
-contactSol.y = deval(contactSol, solMesh);
+% contactSol.x = solMesh;
+% contactSol.y = deval(contactSol, solMesh);
 
 toc
 
@@ -117,8 +102,6 @@ figure(3)
 hold on
 plot(contactSol.y(2,:), contactSol.y(3,:), 'k', 'linewidth', 1.5)
 plot(-contactSol.y(2,:), contactSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(contactSol.y(2,:), 2*contactSol.y(3,end) - contactSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-contactSol.y(2,:), 2*contactSol.y(3,end) - contactSol.y(3,:), 'k', 'linewidth', 1.5)
 title('p = 5.247')
 xlim([-1 1])
 
@@ -134,17 +117,21 @@ while (parameters.P < PMax)
     parameters.P = parameters.P + dP;
     
     % Define the ODEs and BCs
-    DerivFun = @(x, M) KellerModelContactOdes(x, M, parameters);
+    DerivFun = @(x, M, region) KellerModelHalfIntervalContactOdes(x, M, region, parameters);
     
     % Set the boundary conditions
-    BcFun = @(Ml, Mr) KellerModelContactBCs(Ml, Mr, parameters);
+    BcFun = @(Ml, Mr) KellerModelHalfIntervalContactBCs(Ml, Mr, parameters);
     
-    NewSol = bvp4c(DerivFun, BcFun, contactSolOld, solOptions);
+    contactSolNew = bvp4c(DerivFun, BcFun, contactSolOld, solOptions);
     
-    contactSolNew.x = solMesh;
-    contactSolNew.y = deval(NewSol, solMesh);
+%     contactSolNew.x = solMesh;
+%     contactSolNew.y = deval(NewSol, solMesh);
     
     contactSolOld = contactSolNew;
+    
+    figure(3)
+    hold on
+    plot(contactSolOld.y(1,:), contactSolOld.y(4,:))
     
     figure(4)
     hold on
@@ -160,18 +147,14 @@ tic
 parameters.P = 10.337;
 solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
 
-solOld = numSol;
-
 % Define the ODEs and BCs
-DerivFun = @(x, M) KellerModelContactOdes(x, M, parameters);
+DerivFun = @(x, M, region) KellerModelHalfIntervalContactOdes(x, M, region, parameters);
 
 % Set the boundary conditions
-BcFun = @(Ml, Mr) KellerModelContactBCs(Ml, Mr, parameters);
+BcFun = @(Ml, Mr) KellerModelHalfIntervalContactBCs(Ml, Mr, parameters);
 
 contactSol = bvp4c(DerivFun, BcFun, contactSolOld, solOptions);
-% 
-% contactSol.x = solMesh;
-% contactSol.y = deval(contactSol, solMesh);
+
 
 toc
 
@@ -179,8 +162,6 @@ figure(5)
 hold on
 plot(contactSol.y(2,:), contactSol.y(3,:), 'k', 'linewidth', 1.5)
 plot(-contactSol.y(2,:), contactSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(contactSol.y(2,:), 2*contactSol.y(3,end) - contactSol.y(3,:), 'k', 'linewidth', 1.5)
-plot(-contactSol.y(2,:), 2*contactSol.y(3,end) - contactSol.y(3,:), 'k', 'linewidth', 1.5)
 title('p = 10.337')
 xlim([-1 1])
 
@@ -189,39 +170,48 @@ xlim([-1 1])
 
 % Construct the new solution guess
 
-% contIndex = 190;
-scGuess = L - 0.01;
-% fcGuess = deval(contactSolOld, 1.01, 5) - deval(contactSolOld, 0.99, 5);
-% 
-% oldSol = [contactSolOld.y(:, 1:contIndex), ...
-%             [contactSolOld.y(1, contIndex:end); 0.*contactSolOld.y(2,contIndex:end); ...
-%              contactSolOld.y(3:5, contIndex:end); 0.5*pi + 0.*contactSolOld.y(2,contIndex:end); ...
-%              contactSolOld.y(7, contIndex:end)]];
-% solOld.x = [linspace(0, 1, contIndex), ...
-%             linspace(1, 2, length(contactSolOld.y(1,:)) - contIndex + 1)];
-% solMesh = solOld.x;
-% solOld.y = [oldSol; scGuess.*ones(1, length(solOld.x)); fcGuess.*ones(1, length(solOld.x))];
-solOld.x = contactSolOld.x;
-solOld.y = [contactSolOld.y; scGuess.*ones(1, length(solOld.x))];
+contIndices = [34, 35, 36, 38, 39];
+
+oldSol = [contactSolOld.y(:, 1:contIndices(1)), ...
+            contactSolOld.y(:, contIndices), ...
+            contactSolOld.y(:, contIndices(end):end)];        
+oldSol(8,:) = contactSolOld.y(1, contIndices(2)) - contactSolOld.y(1, contIndices(1));
+solOld.x = [linspace(0, 1, contIndices(1)), ...
+            linspace(1, 2, length(contIndices)), ...
+            linspace(2, 3, length(contactSolOld.y(1,:)) - contIndices(end) + 1)];
+                
+solMesh = solOld.x;
+solOld.y = oldSol;
+% solOld.x = contactSolOld.x;
+% solOld.y = [contactSolOld.y; scGuess.*ones(1, length(solOld.x))];
 
 tic
 parameters.P = 10.4;
 solOptions = bvpset('RelTol', 1e-4,'AbsTol', 1e-4, 'NMax', 1e6, 'Vectorized', 'On');
 
-% Define the ODEs and BCs
-% DerivFun = @(x, M, region) KellerModelContactRegionOdes(x, M, region, parameters);
-DerivFun = @(x, M) KellerModelSimplifiedContactRegionOdes(x, M, parameters);
+% Define the function for shooting
+scGuess = 0;
+fcGuess = contactSolOld.y(9, 1);
+Q0Guess = contactSolOld.y(4, 1);
+k0Guess = contactSolOld.y(7, 1);
+xGuess = [scGuess, fcGuess, Q0Guess, k0Guess];
 
-% Set the boundary conditions
-% BcFun = @(Ml, Mr) KellerModelContactRegionBCs(Ml, Mr, parameters);
-BcFun = @(Ml, Mr) KellerModelSimplifiedContactRegionBCs(Ml, Mr);
+options = odeset('RelTol', 1e-4,'AbsTol', 1e-4);
+ShootingFun = @(x) ContactRegionShooting(x, parameters, options);
+xSol = fsolve(ShootingFun, xGuess);
 
-contactRegionSol = bvp4c(DerivFun, BcFun, solOld, solOptions);
-
-contactRegionSol.x = solMesh;
-contactRegionSol.y = deval(contactRegionSol, solMesh);
-
-toc
+% % Define the ODEs and BCs
+% DerivFun = @(x, M, region) KellerModelHalfIntervalContactRegionOdes(x, M, region, parameters);
+% 
+% % Set the boundary conditions
+% BcFun = @(Ml, Mr) KellerModelHalfIntervalContactRegionBCs(Ml, Mr, parameters);
+% 
+% contactRegionSol = bvp4c(DerivFun, BcFun, solOld, solOptions);
+% 
+% contactRegionSol.x = solMesh;
+% contactRegionSol.y = deval(contactRegionSol, solMesh);
+% 
+% toc
 %% Run a continuation in P to make sure it's doing what it's supposed to!
 
 PMax = 20.0;
